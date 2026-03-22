@@ -1,0 +1,249 @@
+@import "tailwindcss";
+
+:root {
+  --background: #111525;
+  --foreground: #e0e4f0;
+  --card: #161b2e;
+  --card-border: #222845;
+  --primary: #6366f1;
+  --primary-hover: #818cf8;
+  --danger: #f87171;
+  --muted: #7683a3;
+  --input-bg: #1a2038;
+  --glow: rgba(99, 102, 241, 0.15);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-border: var(--card-border);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-danger: var(--danger);
+  --color-muted: var(--muted);
+  --color-input-bg: var(--input-bg);
+  --color-glow: var(--glow);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+/* ─── Animations ──────────────────────────────────── */
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 0 1px var(--card-border), 0 4px 32px rgba(99, 102, 241, 0.08); }
+  50% { box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.3), 0 4px 40px rgba(99, 102, 241, 0.18); }
+}
+
+@keyframes gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-in {
+  animation: fade-in-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-in-delay-1 {
+  animation: fade-in-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
+}
+
+.animate-in-delay-2 {
+  animation: fade-in-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
+}
+
+.animate-in-delay-3 {
+  animation: fade-in-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both;
+}
+
+.animate-in-delay-4 {
+  animation: fade-in-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.4s both;
+}
+
+.animate-fade {
+  animation: fade-in 0.3s ease-out both;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* ─── Buttons ─────────────────────────────────────── */
+
+.btn-gradient {
+  background: linear-gradient(135deg, #4f46e5, #6366f1, #818cf8);
+  background-size: 200% 200%;
+  animation: gradient-shift 3s ease infinite;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-gradient::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.12) 50%, transparent 70%);
+  background-size: 200% 100%;
+  animation: gradient-shift 3s ease infinite;
+}
+
+.btn-gradient:hover {
+  box-shadow: 0 4px 28px rgba(99, 102, 241, 0.45), 0 0 0 1px rgba(99, 102, 241, 0.2);
+  transform: translateY(-1px);
+}
+
+.btn-gradient:active {
+  transform: translateY(0);
+}
+
+.btn-gradient:disabled {
+  opacity: 0.5;
+  box-shadow: none;
+  transform: none;
+}
+
+.btn-outline {
+  border: 1px solid var(--card-border);
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.btn-outline:hover {
+  border-color: var(--primary);
+  background: rgba(99, 102, 241, 0.06);
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.1);
+  transform: translateY(-1px);
+}
+
+/* ─── Cards ───────────────────────────────────────── */
+
+.card-glow {
+  box-shadow: 0 0 0 1px var(--card-border), 0 4px 32px rgba(99, 102, 241, 0.06);
+  transition: all 0.4s ease;
+}
+
+.card-glow:hover {
+  box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.25), 0 8px 40px rgba(99, 102, 241, 0.14);
+}
+
+.card-glow-pulse {
+  animation: glow-pulse 3s ease-in-out infinite;
+}
+
+/* ─── Inputs ──────────────────────────────────────── */
+
+.input-field {
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 0.5rem;
+  padding: 0.625rem 1rem;
+  color: var(--foreground);
+  transition: all 0.25s ease;
+  outline: none;
+  width: 100%;
+}
+
+.input-field:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2), 0 0 16px rgba(99, 102, 241, 0.08);
+}
+
+.input-field::placeholder {
+  color: var(--muted);
+}
+
+/* ─── Gradient text ───────────────────────────────── */
+
+.gradient-text {
+  background: linear-gradient(135deg, #818cf8, #6366f1, #60a5fa, #818cf8);
+  background-size: 300% 300%;
+  animation: gradient-shift 4s ease infinite;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* ─── Background effects ──────────────────────────── */
+
+.bg-mesh {
+  position: relative;
+}
+
+.bg-mesh::before {
+  content: "";
+  position: fixed;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(ellipse at 20% 50%, rgba(99, 102, 241, 0.08) 0%, transparent 50%),
+              radial-gradient(ellipse at 80% 20%, rgba(96, 165, 250, 0.06) 0%, transparent 50%),
+              radial-gradient(ellipse at 50% 80%, rgba(129, 140, 248, 0.05) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.bg-mesh > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* ─── Loading spinner ─────────────────────────────── */
+
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--card-border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin-slow 0.8s linear infinite;
+}

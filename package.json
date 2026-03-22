@@ -1,0 +1,15 @@
+{
+  "name": "velen",
+  "version": "1.0.0",
+  "description": "Private Blockchain-Based Digital Wallet and Supply Chain Verification",
+  "private": true,
+  "scripts": {
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "install:all": "cd backend && npm install && cd ../frontend && npm install"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
