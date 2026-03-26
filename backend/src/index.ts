@@ -13,7 +13,7 @@ app.use(cookieParser());
 const allowedOrigins = [
   "http://localhost:3000",
   "https://supply-chain-verification.vercel.app",
-  process.env.FRONTEND_URL,
+  process.env.FRONTEND_URL, 
 ].filter(Boolean);
 
 app.use(
