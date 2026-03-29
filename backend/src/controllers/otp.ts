@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { User } from "../models/User";
+import { User } from "../models/User.model";
 import { generateOTP, verifyOTP } from "../services/otp.service";
 import { sendOTPEmail } from "../services/email.service";
 import { createSession } from "../services/session.service";
@@ -24,7 +24,7 @@ export async function verifyOtp(req: Request, res: Response): Promise<void> {
     const user = await User.findOneAndUpdate(
       { email, status: "unverified" },
       { status: "verified" },
-      { new: true }
+      { new: true },
     );
 
     if (!user) {
@@ -32,7 +32,11 @@ export async function verifyOtp(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    const token = await createSession(user._id.toString(), user.walletAddress, user.role);
+    const token = await createSession(
+      user._id.toString(),
+      user.walletAddress,
+      user.role,
+    );
 
     // Retrieve wallet secrets (shown once, then deleted)
     const secretsRaw = await redis.get(`wallet-secrets:${user._id}`);
@@ -87,3 +91,4 @@ export async function resendOtp(req: Request, res: Response): Promise<void> {
     res.status(500).json({ error: "Failed to resend OTP." });
   }
 }
+

@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
-import { User } from "../models/User";
+import { User } from "../models/User.model";
 import { createSession } from "../services/session.service";
 import { COOKIE_OPTIONS } from "./cookies";
 
@@ -21,7 +21,9 @@ export async function login(req: Request, res: Response): Promise<void> {
     }
 
     if (user.status !== "verified") {
-      res.status(403).json({ error: "Email not verified. Please verify your email first." });
+      res
+        .status(403)
+        .json({ error: "Email not verified. Please verify your email first." });
       return;
     }
 
@@ -31,7 +33,11 @@ export async function login(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    const token = await createSession(user._id.toString(), user.walletAddress, user.role);
+    const token = await createSession(
+      user._id.toString(),
+      user.walletAddress,
+      user.role,
+    );
 
     res.cookie("token", token, COOKIE_OPTIONS);
 
@@ -50,3 +56,4 @@ export async function login(req: Request, res: Response): Promise<void> {
     res.status(500).json({ error: "Login failed. Please try again." });
   }
 }
+

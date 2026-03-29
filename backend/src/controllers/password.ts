@@ -1,13 +1,16 @@
 import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
-import { User } from "../models/User";
+import { User } from "../models/User.model";
 import { generateOTP, verifyOTP } from "../services/otp.service";
 import { sendOTPEmail } from "../services/email.service";
 import { destroyAllUserSessions } from "../services/session.service";
 import { redis } from "../config/redis";
 import { v4 as uuidv4 } from "uuid";
 
-export async function forgotPassword(req: Request, res: Response): Promise<void> {
+export async function forgotPassword(
+  req: Request,
+  res: Response,
+): Promise<void> {
   try {
     const { email } = req.body;
 
@@ -22,14 +25,19 @@ export async function forgotPassword(req: Request, res: Response): Promise<void>
       await sendOTPEmail(email, otp, "reset");
     }
 
-    res.json({ message: "If the email is registered, a reset code has been sent." });
+    res.json({
+      message: "If the email is registered, a reset code has been sent.",
+    });
   } catch (error) {
     console.error("[Forgot Password Error]:", error);
     res.status(500).json({ error: "Failed to process request." });
   }
 }
 
-export async function verifyResetOtp(req: Request, res: Response): Promise<void> {
+export async function verifyResetOtp(
+  req: Request,
+  res: Response,
+): Promise<void> {
   try {
     const { email, otp } = req.body;
 
@@ -54,17 +62,24 @@ export async function verifyResetOtp(req: Request, res: Response): Promise<void>
   }
 }
 
-export async function resetPassword(req: Request, res: Response): Promise<void> {
+export async function resetPassword(
+  req: Request,
+  res: Response,
+): Promise<void> {
   try {
     const { email, resetToken, newPassword } = req.body;
 
     if (!email || !resetToken || !newPassword) {
-      res.status(400).json({ error: "Email, reset token, and new password are required." });
+      res
+        .status(400)
+        .json({ error: "Email, reset token, and new password are required." });
       return;
     }
 
     if (newPassword.length < 6) {
-      res.status(400).json({ error: "Password must be at least 6 characters." });
+      res
+        .status(400)
+        .json({ error: "Password must be at least 6 characters." });
       return;
     }
 
@@ -75,7 +90,10 @@ export async function resetPassword(req: Request, res: Response): Promise<void> 
     }
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
-    const user = await User.findOneAndUpdate({ email }, { password: hashedPassword });
+    const user = await User.findOneAndUpdate(
+      { email },
+      { password: hashedPassword },
+    );
 
     if (!user) {
       res.status(404).json({ error: "User not found." });
@@ -85,9 +103,13 @@ export async function resetPassword(req: Request, res: Response): Promise<void> 
     await redis.del(`reset-token:${email}`);
     await destroyAllUserSessions(user._id.toString());
 
-    res.json({ message: "Password reset successful. Please log in with your new password." });
+    res.json({
+      message:
+        "Password reset successful. Please log in with your new password.",
+    });
   } catch (error) {
     console.error("[Reset Password Error]:", error);
     res.status(500).json({ error: "Password reset failed." });
   }
 }
+

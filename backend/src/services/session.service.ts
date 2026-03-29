@@ -2,7 +2,7 @@ import jwt from "jsonwebtoken";
 import { v4 as uuidv4 } from "uuid";
 import { redis } from "../config/redis";
 import { env } from "../config/env";
-import { UserRole } from "../models/User";
+import { UserRole } from "../models/User.model";
 
 export interface TokenPayload {
   userId: string;
@@ -15,7 +15,7 @@ export interface TokenPayload {
 export async function createSession(
   userId: string,
   walletAddress: string,
-  role: UserRole
+  role: UserRole,
 ): Promise<string> {
   const sessionId = uuidv4();
 
@@ -32,7 +32,9 @@ export async function createSession(
 }
 
 // Verify JWT and check session is still active in Redis
-export async function verifySession(token: string): Promise<TokenPayload | null> {
+export async function verifySession(
+  token: string,
+): Promise<TokenPayload | null> {
   try {
     const payload = jwt.verify(token, env.jwtSecret) as TokenPayload;
 
@@ -53,7 +55,13 @@ export async function destroySession(sessionId: string): Promise<void> {
 export async function destroyAllUserSessions(userId: string): Promise<void> {
   let cursor = "0";
   do {
-    const [nextCursor, keys] = await redis.scan(cursor, "MATCH", "session:*", "COUNT", 100);
+    const [nextCursor, keys] = await redis.scan(
+      cursor,
+      "MATCH",
+      "session:*",
+      "COUNT",
+      100,
+    );
     cursor = nextCursor;
 
     for (const key of keys) {
@@ -67,3 +75,4 @@ export async function destroyAllUserSessions(userId: string): Promise<void> {
     }
   } while (cursor !== "0");
 }
+

@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
-import { User } from "../models/User";
+import { User } from "../models/User.model";
 import { generateWallet } from "../services/wallet.service";
 import { generateOTP } from "../services/otp.service";
 import { sendOTPEmail } from "../services/email.service";
@@ -11,12 +11,16 @@ export async function register(req: Request, res: Response): Promise<void> {
     const { username, email, password, role } = req.body;
 
     if (!username || !email || !password) {
-      res.status(400).json({ error: "Username, email, and password are required." });
+      res
+        .status(400)
+        .json({ error: "Username, email, and password are required." });
       return;
     }
 
     if (password.length < 6) {
-      res.status(400).json({ error: "Password must be at least 6 characters." });
+      res
+        .status(400)
+        .json({ error: "Password must be at least 6 characters." });
       return;
     }
 
@@ -51,7 +55,10 @@ export async function register(req: Request, res: Response): Promise<void> {
     await redis.setex(
       `wallet-secrets:${user._id}`,
       600,
-      JSON.stringify({ mnemonic: wallet.mnemonic, privateKey: wallet.privateKey })
+      JSON.stringify({
+        mnemonic: wallet.mnemonic,
+        privateKey: wallet.privateKey,
+      }),
     );
 
     res.status(201).json({
@@ -63,3 +70,4 @@ export async function register(req: Request, res: Response): Promise<void> {
     res.status(500).json({ error: "Registration failed. Please try again." });
   }
 }
+

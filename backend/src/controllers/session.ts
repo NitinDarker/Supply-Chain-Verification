@@ -1,10 +1,12 @@
 import { Request, Response } from "express";
-import { User } from "../models/User";
+import { User } from "../models/User.model";
 import { destroySession } from "../services/session.service";
 
 export async function getMe(req: Request, res: Response): Promise<void> {
   try {
-    const user = await User.findById(req.user!.userId).select("-password -encryptedPrivateKey");
+    const user = await User.findById(req.user!.userId).select(
+      "-password -encryptedPrivateKey",
+    );
 
     if (!user) {
       res.status(404).json({ error: "User not found." });
@@ -39,3 +41,4 @@ export async function logout(req: Request, res: Response): Promise<void> {
     res.status(500).json({ error: "Logout failed." });
   }
 }
+
