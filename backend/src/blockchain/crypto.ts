@@ -1,12 +1,10 @@
 import {
   createHash,
-  generateKeyPairSync,
-  createPrivateKey,
-  createPublicKey,
-  sign,
-  verify,
 } from "crypto";
+import { ec as EC } from "elliptic";
 import type { KeyPair } from "./types";
+
+const ecCurve = new EC("secp256k1");
 
 // ─── Hashing ─────────────────────────────────────────────────────────────────
 
@@ -17,30 +15,19 @@ export function sha256(data: string | Buffer): string {
 // ─── Key Generation ──────────────────────────────────────────────────────────
 
 export function generateKeyPair(): KeyPair {
-  const { privateKey, publicKey } = generateKeyPairSync("ec", {
-    namedCurve: "secp256k1",
-    privateKeyEncoding: { type: "pkcs8", format: "der" },
-    publicKeyEncoding: { type: "spki", format: "der" },
-  });
+  const keyPair = ecCurve.genKeyPair();
 
   return {
-    privateKey: (privateKey as Buffer).toString("hex"),
-    publicKey: (publicKey as Buffer).toString("hex"),
+    privateKey: keyPair.getPrivate("hex"),
+    publicKey: keyPair.getPublic("hex"),
   };
 }
 
 // ─── Signing ─────────────────────────────────────────────────────────────────
 
 export function signData(privateKeyHex: string, dataHash: string): string {
-  const keyObject = createPrivateKey({
-    key: Buffer.from(privateKeyHex, "hex"),
-    format: "der",
-    type: "pkcs8",
-  });
-
-  return sign("SHA256", Buffer.from(dataHash, "hex"), keyObject).toString(
-    "hex",
-  );
+  const keyPair = ecCurve.keyFromPrivate(privateKeyHex, "hex");
+  return keyPair.sign(dataHash).toDER("hex");
 }
 
 // ─── Verification ─────────────────────────────────────────────────────────────
@@ -51,18 +38,8 @@ export function verifySignature(
   signatureHex: string,
 ): boolean {
   try {
-    const keyObject = createPublicKey({
-      key: Buffer.from(publicKeyHex, "hex"),
-      format: "der",
-      type: "spki",
-    });
-
-    return verify(
-      "SHA256",
-      Buffer.from(dataHash, "hex"),
-      keyObject,
-      Buffer.from(signatureHex, "hex"),
-    );
+    const keyPair = ecCurve.keyFromPublic(publicKeyHex, "hex");
+    return keyPair.verify(dataHash, signatureHex);
   } catch {
     return false; // malformed key or signature — not a crash
   }
@@ -71,7 +48,11 @@ export function verifySignature(
 // ─── Address Derivation ───────────────────────────────────────────────────────
 
 export function publicKeyToAddress(publicKeyHex: string): string {
-  return "0x" + sha256(publicKeyHex).slice(-40);
+  const normalized = publicKeyHex.startsWith("04")
+    ? publicKeyHex.slice(2)
+    : publicKeyHex;
+  const pubKeyBuffer = Buffer.from(normalized, "hex");
+  return "0x" + createHash("sha256").update(pubKeyBuffer).digest("hex").slice(-40);
 }
 
 // ─── Utility ─────────────────────────────────────────────────────────────────

@@ -11,31 +11,42 @@ export async function register(req: Request, res: Response): Promise<void> {
     const { username, email, password, role } = req.body;
 
     if (!username || !email || !password) {
-      res
-        .status(400)
-        .json({ error: "Username, email, and password are required." });
+      res.status(400).json({
+        error: "Username, email, and password are required.",
+      });
       return;
     }
 
     if (password.length < 6) {
-      res
-        .status(400)
-        .json({ error: "Password must be at least 6 characters." });
+      res.status(400).json({
+        error: "Password must be at least 6 characters.",
+      });
       return;
     }
 
-    const existingUser = await User.findOne({ $or: [{ email }, { username }] });
+    const allowedRoles = ["manufacturer", "distributor", "retailer", "user"];
+    if (!allowedRoles.includes(role)) {
+      res.status(400).json({
+        error: "Given role does not exist.",
+      });
+      return;
+    }
+
+    const userRole = role;
+
+    const existingUser = await User.findOne({
+      $or: [{ email }, { username }],
+    });
     if (existingUser) {
       const field = existingUser.email === email ? "Email" : "Username";
-      res.status(409).json({ error: `${field} already exists.` });
+      res.status(409).json({
+        error: `${field} already exists.`,
+      });
       return;
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const wallet = generateWallet();
-
-    const allowedRoles = ["manufacturer", "distributor", "retailer", "user"];
-    const userRole = allowedRoles.includes(role) ? role : "user";
 
     const user = await User.create({
       username,

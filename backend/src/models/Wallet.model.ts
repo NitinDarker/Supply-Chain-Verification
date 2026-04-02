@@ -31,7 +31,4 @@ const WalletSchema = new Schema(
   },
 );
 
-WalletSchema.index({ address: 1 });
-WalletSchema.index({ username: 1 });
-
 export default mongoose.model<IWallet>("Wallet", WalletSchema);

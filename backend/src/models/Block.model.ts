@@ -41,7 +41,4 @@ const BlockSchema = new Schema(
   },
 );
 
-BlockSchema.index({ index: 1 });
-BlockSchema.index({ hash: 1 });
-
 export default mongoose.model<IBlock>("Block", BlockSchema);

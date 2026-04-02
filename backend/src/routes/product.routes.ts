@@ -47,6 +47,7 @@ router.post(
       }
 
       const privateKey = decryptPrivateKey(user.encryptedPrivateKey);
+      console.log(privateKey);
       const wallet = new Wallet({ privateKey, publicKey: user.publicKey });
       const tx = wallet.createProduct(productId, {
         ...metadata,
@@ -66,6 +67,7 @@ router.post(
     } catch (err: unknown) {
       const message =
         err instanceof Error ? err.message : "Failed to register product.";
+        console.log(err)
       res.status(500).json({ error: message });
     }
   },

@@ -32,9 +32,6 @@ const PendingTransactionSchema = new Schema(
   },
 );
 
-PendingTransactionSchema.index({ fromAddress: 1 });
-PendingTransactionSchema.index({ productId: 1 });
-
 export default mongoose.model<IPendingTransaction>(
   "PendingTransaction",
   PendingTransactionSchema,

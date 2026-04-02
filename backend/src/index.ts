@@ -5,7 +5,6 @@ import { env } from "./config/env";
 import { connectDB } from "./config/db";
 import { blockchainService } from "./services/blockchain.service";
 
-// Routes
 import authRoutes from "./routes/auth.routes";
 import walletRoutes from "./routes/wallet.routes";
 import transactionRoutes from "./routes/transaction.routes";
@@ -13,8 +12,6 @@ import productRoutes from "./routes/product.routes";
 import chainRoutes from "./routes/chain.routes";
 
 const app = express();
-
-// ─── Middleware ───────────────────────────────────────────────────────────────
 
 app.use(express.json());
 app.use(cookieParser());
@@ -38,32 +35,37 @@ app.use(
   }),
 );
 
-// ─── Routes ───────────────────────────────────────────────────────────────────
-
 app.use("/api/auth", authRoutes);
 app.use("/api/wallet", walletRoutes);
 app.use("/api/transactions", transactionRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/chain", chainRoutes);
 
-// ─── Health ───────────────────────────────────────────────────────────────────
-
-app.get("/api/health", (_req, res) => {
+app.get("/api/health", (req, res) => {
   res.json({
     status: "ok",
     name: "Velen API",
     version: "1.0.0",
     chainHeight: blockchainService.chain.getChainLength(),
+    developer: "Nitin Sharma"
   });
 });
 
-// ─── 404 ─────────────────────────────────────────────────────────────────────
+// Fingerprinting Test
+app.get("/api/device", (req, res) => {
+  console.log(req.ip)
+  res.json({
+    status: "ok",
+    "req.ip": req.ip,
+    "req.headers": req.headers
+  })
+  return
+})
 
+// Error Handling Middlware
 app.use((_req, res) => {
   res.status(404).json({ error: "Route not found." });
 });
-
-// ─── Startup ─────────────────────────────────────────────────────────────────
 
 async function start(): Promise<void> {
   await connectDB();
