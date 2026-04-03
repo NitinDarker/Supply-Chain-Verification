@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { api } from "@/lib/api";
+import { ArrowLeft } from "lucide-react";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -29,7 +30,19 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
+    <div className="min-h-screen flex flex-col items-center justify-center px-4">
+      <div className='w-full max-w-md text-left mb-4'>
+        <Link
+          href='/'
+          className='group inline-flex items-center gap-2 text-sm text-muted hover:text-primary transition-all duration-200'
+        >
+          <ArrowLeft
+            size={16}
+            className='group-hover:-translate-x-1 transition-transform'
+          />
+          <span>Back to Home</span>
+        </Link>
+      </div>
       <div className="w-full max-w-md bg-card rounded-2xl p-8 card-glow animate-in">
         <h1 className="text-2xl font-bold mb-1 gradient-text inline-block">Create Account</h1>
         <p className="text-muted text-sm mb-6">Join Velen to start tracking products on the blockchain</p>
