@@ -10,6 +10,8 @@ import walletRoutes from "./routes/wallet.routes";
 import transactionRoutes from "./routes/transaction.routes";
 import productRoutes from "./routes/product.routes";
 import chainRoutes from "./routes/chain.routes";
+import { generalLimiter } from "./middleware/rateLimiter.middleware";
+import { sanitizeInput } from "./middleware/sanitize";
 
 const app = express();
 
@@ -35,6 +37,9 @@ app.use(
   }),
 );
 
+app.use(sanitizeInput);
+app.use(generalLimiter);
+
 app.use("/api/auth", authRoutes);
 app.use("/api/wallet", walletRoutes);
 app.use("/api/transactions", transactionRoutes);
@@ -47,20 +52,20 @@ app.get("/api/health", (req, res) => {
     name: "Velen API",
     version: "1.0.0",
     chainHeight: blockchainService.chain.getChainLength(),
-    developer: "Nitin Sharma"
+    developer: "Nitin Sharma",
   });
 });
 
 // Fingerprinting Test
 app.get("/api/device", (req, res) => {
-  console.log(req.ip)
+  console.log(req.ip);
   res.json({
     status: "ok",
     "req.ip": req.ip,
-    "req.headers": req.headers
-  })
-  return
-})
+    "req.headers": req.headers,
+  });
+  return;
+});
 
 // Error Handling Middlware
 app.use((_req, res) => {

@@ -7,6 +7,11 @@ import { blockchainService } from "../services/blockchain.service";
 import { decryptPrivateKey } from "../services/encryption.service";
 import { Wallet } from "../blockchain/wallet";
 import { User } from "../models/User.model";
+import { validate } from "../middleware/validate";
+import {
+  registerProductSchema,
+  moveProductSchema,
+} from "../validators/product.validator";
 
 const router = Router();
 
@@ -21,6 +26,7 @@ const router = Router();
 router.post(
   "/",
   authenticate,
+  validate(registerProductSchema),
   requireRole("manufacturer", "admin"),
   async (req: Request, res: Response): Promise<void> => {
     const { productId, metadata = {} } = req.body;
@@ -67,7 +73,7 @@ router.post(
     } catch (err: unknown) {
       const message =
         err instanceof Error ? err.message : "Failed to register product.";
-        console.log(err)
+      console.log(err);
       res.status(500).json({ error: message });
     }
   },
@@ -84,6 +90,7 @@ router.post(
 router.post(
   "/move",
   authenticate,
+  validate(moveProductSchema),
   requireRole("manufacturer", "distributor", "retailer", "admin"),
   async (req: Request, res: Response): Promise<void> => {
     const { productId, toAddress, metadata = {} } = req.body;
