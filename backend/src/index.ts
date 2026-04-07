@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+
 import { env } from "./config/env";
 import { connectDB } from "./config/db";
 import { blockchainService } from "./services/blockchain.service";
@@ -10,6 +11,8 @@ import walletRoutes from "./routes/wallet.routes";
 import transactionRoutes from "./routes/transaction.routes";
 import productRoutes from "./routes/product.routes";
 import chainRoutes from "./routes/chain.routes";
+import logRoutes from "./routes/logs.routes"
+
 import { generalLimiter } from "./middleware/rateLimiter.middleware";
 import { sanitizeInput } from "./middleware/sanitize";
 
@@ -45,6 +48,7 @@ app.use("/api/wallet", walletRoutes);
 app.use("/api/transactions", transactionRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/chain", chainRoutes);
+app.use("/api/logs", logRoutes)
 
 app.get("/api/health", (req, res) => {
   res.json({
@@ -54,17 +58,6 @@ app.get("/api/health", (req, res) => {
     chainHeight: blockchainService.chain.getChainLength(),
     developer: "Nitin Sharma",
   });
-});
-
-// Fingerprinting Test
-app.get("/api/device", (req, res) => {
-  console.log(req.ip);
-  res.json({
-    status: "ok",
-    "req.ip": req.ip,
-    "req.headers": req.headers,
-  });
-  return;
 });
 
 // Error Handling Middlware
