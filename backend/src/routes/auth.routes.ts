@@ -23,8 +23,8 @@ import {
 
 const router = Router();
 
-router.post("/register", registerLimiter, validate(registerSchema), register);
-router.post("/verify-otp", otpLimiter, validate(otpSchema), verifyOtp);
+router.post("/register", registerLimiter, register);
+router.post("/verify-otp", otpLimiter, verifyOtp);
 router.post("/login", authLimiter, validate(loginSchema), login);
 router.post("/resend-otp", otpLimiter, resendOtp);
 router.get("/me", authMiddleware, getMe);

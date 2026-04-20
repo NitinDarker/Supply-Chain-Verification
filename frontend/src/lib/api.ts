@@ -23,6 +23,7 @@ export interface User {
   walletAddress: string;
   publicKey?: string;
   status?: string;
+  profilePictureUrl?: string;
   createdAt?: string;
 }
 
@@ -51,7 +52,10 @@ export interface BlockDTO {
   hash: string;
 }
 
-export interface ProductEvent extends TransactionDTO {
+export interface ProductEvent extends Omit<
+  TransactionDTO,
+  "blockIndex" | "status" | "blockHash"
+> {
   blockIndex: number | null;
   blockHash: string | null;
   status: "CONFIRMED" | "PENDING";
@@ -214,3 +218,4 @@ export const api = {
       },
     ),
 };
+

@@ -12,6 +12,7 @@ export interface IUser extends Document {
   walletAddress: string;
   publicKey: string;
   encryptedPrivateKey: string;
+  profilePictureUrl?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -60,10 +61,15 @@ const userSchema = new Schema<IUser>(
       type: String,
       required: true,
     },
+    profilePictureUrl: {
+      type: String,
+      required: false,
+      trim: true,
+    },
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 export const User = mongoose.model<IUser>("User", userSchema);

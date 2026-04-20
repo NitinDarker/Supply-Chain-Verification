@@ -11,7 +11,7 @@ import walletRoutes from "./routes/wallet.routes";
 import transactionRoutes from "./routes/transaction.routes";
 import productRoutes from "./routes/product.routes";
 import chainRoutes from "./routes/chain.routes";
-import logRoutes from "./routes/logs.routes"
+import logRoutes from "./routes/logs.routes";
 
 import { generalLimiter } from "./middleware/rateLimiter.middleware";
 import { sanitizeInput } from "./middleware/sanitize";
@@ -48,7 +48,7 @@ app.use("/api/wallet", walletRoutes);
 app.use("/api/transactions", transactionRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/chain", chainRoutes);
-app.use("/api/logs", logRoutes)
+app.use("/api/logs", logRoutes);
 
 app.get("/api/health", (req, res) => {
   res.json({
@@ -62,16 +62,17 @@ app.get("/api/health", (req, res) => {
 
 // Error Handling Middlware
 app.use((_req, res) => {
-  res.status(404).json({ error: "Route not found." });
+  res.status(404).json({
+    error: "Route not found.",
+  });
 });
 
+// Entry function
 async function start(): Promise<void> {
   await connectDB();
 
-  // Rebuild in-memory chain from MongoDB before accepting requests
   await blockchainService.loadFromDB();
 
-  // Auto-mine every 30s if there are pending transactions
   const VALIDATOR_ADDRESS = process.env.VALIDATOR_ADDRESS;
   if (VALIDATOR_ADDRESS) {
     setInterval(async () => {
@@ -87,7 +88,7 @@ async function start(): Promise<void> {
       } catch (err) {
         console.error("[Chain] Auto-mine failed:", err);
       }
-    }, 30_000);
+    }, 60_000);
   } else {
     console.warn(
       "[Chain] VALIDATOR_ADDRESS not set — auto-mining disabled. Use POST /api/chain/mine manually.",
