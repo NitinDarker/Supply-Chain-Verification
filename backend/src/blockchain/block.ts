@@ -5,6 +5,7 @@
 import { sha256 } from "./crypto";
 import { Transaction } from "./transaction";
 import type { BlockDTO, TransactionDTO } from "./types";
+import logger from "../config/logger";
 
 export class Block {
   public index: number;
@@ -35,19 +36,26 @@ export class Block {
 
   public mineBlock(difficulty = 2): void {
     const target = "0".repeat(difficulty);
-    console.time(`[Block ${this.index}] mined`);
+    const startedAt = Date.now();
     while (!this.hash.startsWith(target)) {
       this.nonce++;
       this.hash = this.calculateHash();
     }
-    console.timeEnd(`[Block ${this.index}] mined`);
-    console.log(`  → nonce: ${this.nonce}, hash: ${this.hash.slice(0, 20)}...`);
+    logger.info("[Block] Mined", {
+      blockIndex: this.index,
+      durationMs: Date.now() - startedAt,
+      nonce: this.nonce,
+      hashPrefix: this.hash.slice(0, 20),
+    });
   }
 
   public hasValidTransactions(): boolean {
     for (const tx of this.transactions) {
       if (!tx.isValid()) {
-        console.error(`[Block ${this.index}] Invalid tx: ${tx.txId}`);
+        logger.error("[Block] Invalid transaction", {
+          blockIndex: this.index,
+          txId: tx.txId,
+        });
         return false;
       }
     }

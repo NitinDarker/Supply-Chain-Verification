@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import { User } from "../models/User.model";
 import { createSession } from "../services/session.service";
 import { COOKIE_OPTIONS } from "./cookies";
+import logger from "../config/logger";
 
 export async function login(req: Request, res: Response): Promise<void> {
   try {
@@ -52,8 +53,7 @@ export async function login(req: Request, res: Response): Promise<void> {
       },
     });
   } catch (error) {
-    console.error("[Login Error]:", error);
+    logger.error("[Login Error]", { error });
     res.status(500).json({ error: "Login failed. Please try again." });
   }
 }
-

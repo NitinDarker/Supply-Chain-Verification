@@ -2,6 +2,7 @@ import { Blockchain } from "../blockchain/blockchain";
 import { Block } from "../blockchain/block";
 import { Transaction } from "../blockchain/transaction";
 import type { BlockDTO, TransactionDTO } from "../blockchain/types";
+import logger from "../config/logger";
 
 /**
  * BlockchainService — Singleton wrapper around the Blockchain core.
@@ -55,15 +56,15 @@ class BlockchainService {
     if (storedBlocks.length === 0) {
       // First run — persist the genesis block so DB and memory are in sync
       await BlockModel.create(this.chain.chain[0].toDTO());
-      console.log("[Blockchain] Fresh chain — genesis block persisted.");
+      logger.info("[Blockchain] Fresh chain - genesis block persisted.");
       return;
     }
 
     // Rebuild chain from DB, skipping genesis (already in memory from constructor)
     this.chain.chain = storedBlocks.map((b) => Block.fromDTO(b as BlockDTO));
-    console.log(
-      `[Blockchain] Loaded ${this.chain.chain.length} blocks from MongoDB.`,
-    );
+    logger.info("[Blockchain] Loaded blocks from MongoDB", {
+      blockCount: this.chain.chain.length,
+    });
 
     // Restore pending transactions if any survived a restart
     const pending = await PendingModel.find().lean();
@@ -71,9 +72,9 @@ class BlockchainService {
       this.chain.pendingTransactions = pending.map((t) =>
         Transaction.fromDTO(t as TransactionDTO),
       );
-      console.log(
-        `[Blockchain] Restored ${pending.length} pending transactions.`,
-      );
+      logger.info("[Blockchain] Restored pending transactions", {
+        pendingCount: pending.length,
+      });
     }
   }
 

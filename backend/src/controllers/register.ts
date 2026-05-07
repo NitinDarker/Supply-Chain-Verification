@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import logger from "../config/logger";
 import bcrypt from "bcryptjs";
 import { User } from "../models/User.model";
 import { generateWallet } from "../services/wallet.service";
@@ -77,7 +78,7 @@ export async function register(req: Request, res: Response): Promise<void> {
       email,
     });
   } catch (error) {
-    console.error("[Register Error]:", error);
+    logger.error("[Register Error]", { error });
     res.status(500).json({ error: "Registration failed. Please try again." });
   }
 }

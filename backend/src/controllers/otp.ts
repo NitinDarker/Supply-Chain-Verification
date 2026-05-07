@@ -1,10 +1,13 @@
 import { Request, Response } from "express";
+import logger from "../config/logger";
 import { User } from "../models/User.model";
 import { generateOTP, verifyOTP } from "../services/otp.service";
 import { sendOTPEmail } from "../services/email.service";
 import { createSession } from "../services/session.service";
 import { redis } from "../config/redis";
 import { COOKIE_OPTIONS } from "./cookies";
+import { blockchainService } from "../services/blockchain.service";
+import { env } from "../config/env";
 
 export async function verifyOtp(req: Request, res: Response): Promise<void> {
   try {
@@ -31,6 +34,16 @@ export async function verifyOtp(req: Request, res: Response): Promise<void> {
       res.status(404).json({ error: "User not found or already verified." });
       return;
     }
+
+    const initialGrantBlock = blockchainService.chain.grantInitialTokens(
+      user.walletAddress,
+      env.initialVelGrant,
+      {
+        reason: "INITIAL_USER_GRANT",
+        userId: user._id.toString(),
+      },
+    );
+    await blockchainService.persistBlock(initialGrantBlock);
 
     const token = await createSession(
       user._id.toString(),
@@ -60,7 +73,7 @@ export async function verifyOtp(req: Request, res: Response): Promise<void> {
       walletSecrets,
     });
   } catch (error) {
-    console.error("[Verify OTP Error]:", error);
+    logger.error("[Verify OTP Error]", { error });
     res.status(500).json({ error: "Verification failed. Please try again." });
   }
 }
@@ -87,8 +100,7 @@ export async function resendOtp(req: Request, res: Response): Promise<void> {
 
     res.json({ message: "If the email exists, a new OTP has been sent." });
   } catch (error) {
-    console.error("[Resend OTP Error]:", error);
+    logger.error("[Resend OTP Error]", { error });
     res.status(500).json({ error: "Failed to resend OTP." });
   }
 }
-

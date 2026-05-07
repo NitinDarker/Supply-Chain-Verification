@@ -1,7 +1,12 @@
 import winston from "winston";
-import "winston-mongodb";
+import fs from "fs";
+import path from "path";
 
 const isDev = process.env.NODE_ENV !== "production";
+const logsDir = path.resolve(process.cwd(), "logs");
+if (!fs.existsSync(logsDir)) {
+  fs.mkdirSync(logsDir, { recursive: true });
+}
 
 const logger = winston.createLogger({
   level: "info",
@@ -11,7 +16,16 @@ const logger = winston.createLogger({
     winston.format.json(),
   ),
   transports: [
-    // Console in development
+    new winston.transports.File({
+      filename: path.join(logsDir, "combined.log"),
+      level: "info",
+    }),
+    new winston.transports.File({
+      filename: path.join(logsDir, "error.log"),
+      level: "error",
+    }),
+
+    // Console in development for local debugging
     ...(isDev
       ? [
           new winston.transports.Console({
@@ -28,17 +42,6 @@ const logger = winston.createLogger({
         ]
       : []),
 
-    // MongoDB — stores in your existing DB, in a "logs" collection
-    new winston.transports.MongoDB({
-      db: process.env.MONGODB_URI!,
-      collection: "logs",
-      level: "info",
-      storeHost: false,
-      capped: true,
-      cappedMax: 5000, // max 5000 log entries, oldest auto-deleted
-      tryReconnect: true,
-      metaKey: "meta",
-    }),
   ],
 });
 

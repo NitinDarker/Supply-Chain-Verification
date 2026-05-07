@@ -1,5 +1,6 @@
 import nodemailer from "nodemailer";
 import { env } from "../config/env";
+import logger from "../config/logger";
 
 const transporter = nodemailer.createTransport({
   host: env.smtp.host,
@@ -34,7 +35,11 @@ export async function sendOTPEmail(to: string, otp: string, purpose: "verify" | 
 
   // If SMTP not configured, just log to console
   if (!env.smtp.user || !env.smtp.pass) {
-    console.log(`[Email] OTP for ${to} (${purpose}): ${otp}`);
+    logger.warn("[Email] SMTP not configured; OTP emitted to logs", {
+      to,
+      purpose,
+      otp,
+    });
     return;
   }
 
@@ -47,7 +52,11 @@ export async function sendOTPEmail(to: string, otp: string, purpose: "verify" | 
       html,
     });
   } catch (err) {
-    console.warn(`[Email] Failed to send, logging OTP to console instead.`);
-    console.log(`[Email] OTP for ${to} (${purpose}): ${otp}`);
+    logger.warn("[Email] Failed to send email; OTP emitted to logs", {
+      to,
+      purpose,
+      error: err instanceof Error ? err.message : err,
+      otp,
+    });
   }
 }

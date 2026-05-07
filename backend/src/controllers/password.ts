@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import logger from "../config/logger";
 import bcrypt from "bcryptjs";
 import { User } from "../models/User.model";
 import { generateOTP, verifyOTP } from "../services/otp.service";
@@ -29,7 +30,7 @@ export async function forgotPassword(
       message: "If the email is registered, a reset code has been sent.",
     });
   } catch (error) {
-    console.error("[Forgot Password Error]:", error);
+    logger.error("[Forgot Password Error]", { error });
     res.status(500).json({ error: "Failed to process request." });
   }
 }
@@ -57,7 +58,7 @@ export async function verifyResetOtp(
 
     res.json({ message: "OTP verified.", resetToken });
   } catch (error) {
-    console.error("[Verify Reset OTP Error]:", error);
+    logger.error("[Verify Reset OTP Error]", { error });
     res.status(500).json({ error: "Verification failed." });
   }
 }
@@ -108,7 +109,7 @@ export async function resetPassword(
         "Password reset successful. Please log in with your new password.",
     });
   } catch (error) {
-    console.error("[Reset Password Error]:", error);
+    logger.error("[Reset Password Error]", { error });
     res.status(500).json({ error: "Password reset failed." });
   }
 }

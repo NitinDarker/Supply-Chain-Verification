@@ -15,6 +15,7 @@ export const env = {
     pass: process.env.SMTP_PASS || "",
   },
   otpExpirySeconds: parseInt(process.env.OTP_EXPIRY_SECONDS || "300", 10),
+  initialVelGrant: parseInt(process.env.INITIAL_VEL_GRANT || "100", 10),
   walletEncryptionKey:
     process.env.WALLET_ENCRYPTION_KEY || "velen-dev-encryption-key-32ch",
 };

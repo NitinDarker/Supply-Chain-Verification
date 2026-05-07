@@ -164,6 +164,36 @@ export class Blockchain {
     return block;
   }
 
+  public grantInitialTokens(
+    toAddress: string,
+    amount: number,
+    metadata: Record<string, unknown> = {},
+  ): Block {
+    if (!toAddress) throw new Error("Recipient address is required.");
+    if (amount <= 0) {
+      throw new Error("INITIAL_GRANT_AMOUNT_INVALID: Amount must be > 0.");
+    }
+
+    const grantTx = new Transaction({
+      fromAddress: SYSTEM_ADDRESS,
+      toAddress,
+      amount,
+      type: TxType.GENESIS,
+      metadata,
+    });
+    grantTx.txId = generateTxId("initial-grant");
+    grantTx.timestamp = Date.now();
+
+    const block = new Block(
+      this.chain.length,
+      [grantTx],
+      this.getLatestBlock().hash,
+    );
+    block.mineBlock(this.difficulty);
+    this.chain.push(block);
+    return block;
+  }
+
   // ─── Balance ───────────────────────────────────────────────────────────────
 
   public getBalanceOfAddress(address: string): number {

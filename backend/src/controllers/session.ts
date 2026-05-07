@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import logger from "../config/logger";
 import { User } from "../models/User.model";
 import { destroySession } from "../services/session.service";
 
@@ -26,7 +27,7 @@ export async function getMe(req: Request, res: Response): Promise<void> {
       },
     });
   } catch (error) {
-    console.error("[Me Error]:", error);
+    logger.error("[Me Error]", { error });
     res.status(500).json({ error: "Failed to fetch user data." });
   }
 }
@@ -37,7 +38,7 @@ export async function logout(req: Request, res: Response): Promise<void> {
     res.clearCookie("token", { path: "/" });
     res.json({ message: "Logged out successfully." });
   } catch (error) {
-    console.error("[Logout Error]:", error);
+    logger.error("[Logout Error]", { error });
     res.status(500).json({ error: "Logout failed." });
   }
 }

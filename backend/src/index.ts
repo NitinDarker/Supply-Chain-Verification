@@ -15,11 +15,26 @@ import logRoutes from "./routes/logs.routes";
 
 import { generalLimiter } from "./middleware/rateLimiter.middleware";
 import { sanitizeInput } from "./middleware/sanitize";
+import logger from "./config/logger";
 
 const app = express();
 
 app.use(express.json());
 app.use(cookieParser());
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on("finish", () => {
+    logger.info("HTTP request completed", {
+      method: req.method,
+      url: req.originalUrl,
+      statusCode: res.statusCode,
+      durationMs: Date.now() - start,
+      ip: req.ip,
+      userAgent: req.get("user-agent"),
+    });
+  });
+  next();
+});
 
 const allowedOrigins = [
   "http://localhost:3000",
@@ -60,8 +75,9 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-// Error Handling Middlware
+// Error handling middleware
 app.use((_req, res) => {
+  logger.warn("Route not found");
   res.status(404).json({
     error: "Route not found.",
   });
@@ -82,27 +98,28 @@ async function start(): Promise<void> {
           blockchainService.chain.minePendingTransactions(VALIDATOR_ADDRESS);
         await blockchainService.persistBlock(block);
         await blockchainService.clearPendingTxs();
-        console.log(
-          `[Chain] Block #${block.index} mined. Txs: ${block.transactions.length}`,
-        );
+        logger.info("[Chain] Block mined", {
+          blockIndex: block.index,
+          transactionCount: block.transactions.length,
+        });
       } catch (err) {
-        console.error("[Chain] Auto-mine failed:", err);
+        logger.error("[Chain] Auto-mine failed", { err });
       }
     }, 60_000);
   } else {
-    console.warn(
-      "[Chain] VALIDATOR_ADDRESS not set — auto-mining disabled. Use POST /api/chain/mine manually.",
+    logger.warn(
+      "[Chain] VALIDATOR_ADDRESS not set - auto-mining disabled. Use POST /api/chain/mine manually.",
     );
   }
 
   app.listen(env.port, () => {
-    console.log(`[Velen] Server running on http://localhost:${env.port}`);
-    console.log(
-      `[Chain] Height: ${blockchainService.chain.getChainLength()} blocks`,
-    );
+    logger.info("[Velen] Server started", {
+      url: `http://localhost:${env.port}`,
+      chainHeight: blockchainService.chain.getChainLength(),
+    });
   });
 }
 
 start().catch((err) => {
-  console.error("[Velen] Failed to start:", err);
+  logger.error("[Velen] Failed to start", { err });
 });
