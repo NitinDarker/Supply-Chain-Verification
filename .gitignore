@@ -1,7 +1,8 @@
 node_modules/
 dist/
+.next/
+logs/
+.claude/
 .env
 *.log
 .DS_Store
-.next/
-.claude/

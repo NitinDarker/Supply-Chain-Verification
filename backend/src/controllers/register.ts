@@ -6,6 +6,8 @@ import { generateWallet } from "../services/wallet.service";
 import { generateOTP } from "../services/otp.service";
 import { sendOTPEmail } from "../services/email.service";
 import { redis } from "../config/redis";
+import { blockchainService } from "../services/blockchain.service";
+import { env } from "../config/env";
 
 export async function register(req: Request, res: Response): Promise<void> {
   try {
@@ -59,6 +61,30 @@ export async function register(req: Request, res: Response): Promise<void> {
       publicKey: wallet.publicKey,
       encryptedPrivateKey: wallet.encryptedPrivateKey,
     });
+
+    try {
+      const grantBlock = blockchainService.chain.grantInitialTokens(
+        wallet.walletAddress,
+        env.initialVelGrant,
+        {
+          reason: "signup_bonus",
+          userId: String(user._id),
+          email,
+        },
+      );
+      await blockchainService.persistBlock(grantBlock);
+    } catch (grantError) {
+      logger.error("[Register Initial VEL Grant Error]", {
+        error: grantError,
+        userId: user._id,
+        walletAddress: wallet.walletAddress,
+      });
+      await User.deleteOne({ _id: user._id });
+      res.status(500).json({
+        error: "Registration failed while funding wallet. Please try again.",
+      });
+      return;
+    }
 
     const otp = await generateOTP(email, "verify");
     await sendOTPEmail(email, otp, "verify");

@@ -5,6 +5,7 @@ import cookieParser from "cookie-parser";
 import { env } from "./config/env";
 import { connectDB } from "./config/db";
 import { blockchainService } from "./services/blockchain.service";
+import logger from "./config/logger";
 
 import authRoutes from "./routes/auth.routes";
 import walletRoutes from "./routes/wallet.routes";
@@ -15,14 +16,15 @@ import logRoutes from "./routes/logs.routes";
 
 import { generalLimiter } from "./middleware/rateLimiter.middleware";
 import { sanitizeInput } from "./middleware/sanitize";
-import logger from "./config/logger";
 
 const app = express();
 
 app.use(express.json());
 app.use(cookieParser());
+
 app.use((req, res, next) => {
   const start = Date.now();
+  
   res.on("finish", () => {
     logger.info("HTTP request completed", {
       method: req.method,
