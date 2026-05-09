@@ -5,7 +5,9 @@ import path from "path";
 
 const isDev = process.env.NODE_ENV !== "production";
 
-const logsDir = path.resolve(process.cwd(), "logs");
+const logsDir = process.env.LOG_DIR
+  ? path.resolve(process.env.LOG_DIR)
+  : path.resolve(process.cwd(), "logs");
 
 if (!fs.existsSync(logsDir)) {
   fs.mkdirSync(logsDir, { recursive: true });
@@ -24,6 +26,7 @@ const logger = winston.createLogger({
     // Combined Logs
     new DailyRotateFile({
       filename: path.join(logsDir, "combined-%DATE%.log"),
+      auditFile: path.join(logsDir, "combined-audit.json"),
       datePattern: "YYYY-MM-DD",
       level: "info",
       maxSize: "20m",
@@ -34,6 +37,7 @@ const logger = winston.createLogger({
     // Error Logs
     new DailyRotateFile({
       filename: path.join(logsDir, "error-%DATE%.log"),
+      auditFile: path.join(logsDir, "error-audit.json"),
       datePattern: "YYYY-MM-DD",
       level: "error",
       maxSize: "20m",
@@ -60,5 +64,7 @@ const logger = winston.createLogger({
       : []),
   ],
 });
+
+logger.info("[Logger] File logging initialized", { logsDir });
 
 export default logger;

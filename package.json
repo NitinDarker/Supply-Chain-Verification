@@ -7,7 +7,8 @@
   "scripts": {
     "dev:backend": "cd backend && npm run dev",
     "dev:frontend": "cd frontend && npm run dev",
-    "dev": "concurrently \"docker start velen-mongo\" \"docker start velen-redis\" \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:infra": "docker compose up",
+    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:infra\"",
     "install:all": "cd backend && npm install && cd ../frontend && npm install"
   },
   "devDependencies": {

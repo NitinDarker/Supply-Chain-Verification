@@ -93,6 +93,16 @@ export const api = {
       method: "POST",
       body: JSON.stringify(body),
     }),
+  signup: (body: {
+    username: string;
+    email: string;
+    password: string;
+    role: string;
+  }) =>
+    request<{ message: string; email: string }>("/auth/signup", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
   verifyOtp: (body: { email: string; otp: string }) =>
     request<{
       message: string;
@@ -218,4 +228,3 @@ export const api = {
       },
     ),
 };
-

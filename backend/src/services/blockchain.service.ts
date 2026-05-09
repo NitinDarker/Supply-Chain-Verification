@@ -3,6 +3,8 @@ import { Block } from "../blockchain/block";
 import { Transaction } from "../blockchain/transaction";
 import type { BlockDTO, TransactionDTO } from "../blockchain/types";
 import logger from "../config/logger";
+import { redis } from "../config/redis";
+import crypto from "crypto";
 
 /**
  * BlockchainService — Singleton wrapper around the Blockchain core.
@@ -35,6 +37,35 @@ class BlockchainService {
 
   constructor() {
     this.chain = new Blockchain();
+  }
+
+  private async withChainWriteLock<T>(task: () => Promise<T>): Promise<T> {
+    const lockKey = "chain:write-lock";
+    const lockToken = crypto.randomUUID();
+    const lockTtlSeconds = 20;
+
+    const acquired = await redis.set(
+      lockKey,
+      lockToken,
+      "EX",
+      lockTtlSeconds,
+      "NX",
+    );
+
+    if (!acquired) {
+      throw new Error(
+        "CHAIN_WRITE_LOCKED: Another chain write is in progress. Please retry.",
+      );
+    }
+
+    try {
+      return await task();
+    } finally {
+      const current = await redis.get(lockKey);
+      if (current === lockToken) {
+        await redis.del(lockKey);
+      }
+    }
   }
 
   // ─── Bootstrap ─────────────────────────────────────────────────────────────
@@ -89,6 +120,26 @@ class BlockchainService {
       throw new Error(
         "BlockchainService not initialised. Call loadFromDB() first.",
       );
+
+    const latest = await this.blockModel.findOne().sort({ index: -1 }).lean();
+    if (latest) {
+      const expectedIndex = latest.index + 1;
+      if (block.index !== expectedIndex) {
+        throw new Error(
+          `CHAIN_INDEX_MISMATCH: expected index ${expectedIndex}, got ${block.index}.`,
+        );
+      }
+      if (block.previousHash !== latest.hash) {
+        throw new Error(
+          `CHAIN_LINK_MISMATCH: expected previousHash ${latest.hash}, got ${block.previousHash}.`,
+        );
+      }
+    } else if (block.index !== 0 || block.previousHash !== "0") {
+      throw new Error(
+        "CHAIN_GENESIS_MISMATCH: First block must be genesis-compatible.",
+      );
+    }
+
     await this.blockModel.create(block.toDTO());
   }
 
@@ -104,9 +155,52 @@ class BlockchainService {
   /**
    * Clear all pending transactions from MongoDB after a block is mined.
    */
-  public async clearPendingTxs(): Promise<void> {
+  public async clearPendingTxs(txIds?: string[]): Promise<void> {
     if (!this.pendingModel) return;
-    await this.pendingModel.deleteMany({});
+    if (!txIds || txIds.length === 0) {
+      await this.pendingModel.deleteMany({});
+      return;
+    }
+    await this.pendingModel.deleteMany({ txId: { $in: txIds } });
+  }
+
+  public async grantInitialTokensAtomic(
+    toAddress: string,
+    amount: number,
+    metadata: Record<string, unknown> = {},
+  ): Promise<void> {
+    await this.withChainWriteLock(async () => {
+      await this.loadFromDB();
+
+      const grantBlock = this.chain.grantInitialTokens(toAddress, amount, metadata);
+      try {
+        await this.persistBlock(grantBlock);
+      } catch (error) {
+        await this.loadFromDB();
+        throw error;
+      }
+    });
+  }
+
+  public async minePendingTransactionsAtomic(
+    validatorAddress: string,
+  ): Promise<Block> {
+    return this.withChainWriteLock(async () => {
+      await this.loadFromDB();
+
+      const block = this.chain.minePendingTransactions(validatorAddress);
+      try {
+        await this.persistBlock(block);
+        const minedTxIds = block.transactions
+          .map((tx) => tx.txId)
+          .filter((txId): txId is string => Boolean(txId));
+        await this.clearPendingTxs(minedTxIds);
+      } catch (error) {
+        await this.loadFromDB();
+        throw error;
+      }
+      return block;
+    });
   }
 }
 

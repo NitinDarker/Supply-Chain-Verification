@@ -9,6 +9,37 @@ Private blockchain-based digital wallet and supply chain verification system.
 
 ## Setup
 
+### Option A: Run with Nginx (rate limiting + load balancing)
+
+This starts:
+- `nginx` in front of backend on `http://localhost:5000`
+- `2` backend instances (`backend1`, `backend2`)
+- `mongodb` and `redis`
+- frontend stays local on your machine (`http://localhost:3000`)
+
+```bash
+docker compose up --build
+```
+
+Stop:
+```bash
+docker compose down
+```
+
+Run frontend locally in a separate terminal:
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+If needed, set:
+```bash
+NEXT_PUBLIC_API_URL=http://localhost:5000/api
+```
+
+### Option B: Run services manually (without Nginx)
+
 ### 1. Start MongoDB and Redis
 
 ```bash

@@ -2,10 +2,12 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 
+import logger from "./config/logger";
 import { env } from "./config/env";
 import { connectDB } from "./config/db";
 import { blockchainService } from "./services/blockchain.service";
-import logger from "./config/logger";
+import { startUnverifiedCleanupJob } from "./services/accountCleanup.service";
+import { startAutoMiningJob } from "./services/autoMining.service";
 
 import authRoutes from "./routes/auth.routes";
 import walletRoutes from "./routes/wallet.routes";
@@ -15,7 +17,7 @@ import chainRoutes from "./routes/chain.routes";
 import logRoutes from "./routes/logs.routes";
 
 import { generalLimiter } from "./middleware/rateLimiter.middleware";
-import { sanitizeInput } from "./middleware/sanitize";
+import { sanitizeInput } from "./middleware/input.security";
 
 const app = express();
 
@@ -88,31 +90,10 @@ app.use((_req, res) => {
 // Entry function
 async function start(): Promise<void> {
   await connectDB();
+  startUnverifiedCleanupJob();
 
   await blockchainService.loadFromDB();
-
-  const VALIDATOR_ADDRESS = process.env.VALIDATOR_ADDRESS;
-  if (VALIDATOR_ADDRESS) {
-    setInterval(async () => {
-      if (blockchainService.chain.pendingTransactions.length === 0) return;
-      try {
-        const block =
-          blockchainService.chain.minePendingTransactions(VALIDATOR_ADDRESS);
-        await blockchainService.persistBlock(block);
-        await blockchainService.clearPendingTxs();
-        logger.info("[Chain] Block mined", {
-          blockIndex: block.index,
-          transactionCount: block.transactions.length,
-        });
-      } catch (err) {
-        logger.error("[Chain] Auto-mine failed", { err });
-      }
-    }, 60_000);
-  } else {
-    logger.warn(
-      "[Chain] VALIDATOR_ADDRESS not set - auto-mining disabled. Use POST /api/chain/mine manually.",
-    );
-  }
+  startAutoMiningJob();
 
   app.listen(env.port, () => {
     logger.info("[Velen] Server started", {

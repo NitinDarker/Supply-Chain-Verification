@@ -6,8 +6,6 @@ import { generateWallet } from "../services/wallet.service";
 import { generateOTP } from "../services/otp.service";
 import { sendOTPEmail } from "../services/email.service";
 import { redis } from "../config/redis";
-import { blockchainService } from "../services/blockchain.service";
-import { env } from "../config/env";
 
 export async function register(req: Request, res: Response): Promise<void> {
   try {
@@ -62,32 +60,40 @@ export async function register(req: Request, res: Response): Promise<void> {
       encryptedPrivateKey: wallet.encryptedPrivateKey,
     });
 
-    try {
-      const grantBlock = blockchainService.chain.grantInitialTokens(
-        wallet.walletAddress,
-        env.initialVelGrant,
-        {
-          reason: "signup_bonus",
-          userId: String(user._id),
-          email,
-        },
-      );
-      await blockchainService.persistBlock(grantBlock);
-    } catch (grantError) {
-      logger.error("[Register Initial VEL Grant Error]", {
-        error: grantError,
-        userId: user._id,
-        walletAddress: wallet.walletAddress,
+    const otpResult = await generateOTP(email, "verify", {
+      enforceCooldown: false,
+    });
+    if (!otpResult.ok) {
+      logger.error("[Register OTP Generation Error]", {
+        email,
+        reason: otpResult.reason,
       });
       await User.deleteOne({ _id: user._id });
-      res.status(500).json({
-        error: "Registration failed while funding wallet. Please try again.",
-      });
+      res.status(500).json({ error: "Registration failed. Please try again." });
       return;
     }
 
-    const otp = await generateOTP(email, "verify");
-    await sendOTPEmail(email, otp, "verify");
+    await User.updateOne(
+      { _id: user._id },
+      {
+        $set: {
+          lastOtpSentAt: otpResult.sentAt,
+          otpExpiresAt: otpResult.expiresAt,
+          lastOtpPurpose: "verify",
+        },
+      },
+    );
+
+    logger.info("[Auth OTP Issued]", {
+      email,
+      userId: user._id,
+      purpose: "verify",
+      createdAt: user.createdAt.toISOString(),
+      sentAt: otpResult.sentAt.toISOString(),
+      expiresAt: otpResult.expiresAt.toISOString(),
+    });
+
+    await sendOTPEmail(email, otpResult.otp, "verify");
 
     // Store wallet secrets temporarily — shown once after OTP verification
     await redis.setex(

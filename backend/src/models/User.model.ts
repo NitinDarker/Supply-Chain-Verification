@@ -13,6 +13,10 @@ export interface IUser extends Document {
   publicKey: string;
   encryptedPrivateKey: string;
   profilePictureUrl?: string;
+  lastOtpSentAt?: Date | null;
+  otpExpiresAt?: Date | null;
+  otpVerifiedAt?: Date | null;
+  lastOtpPurpose?: "verify" | "reset" | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -66,10 +70,29 @@ const userSchema = new Schema<IUser>(
       required: false,
       trim: true,
     },
+    lastOtpSentAt: {
+      type: Date,
+      default: null,
+    },
+    otpExpiresAt: {
+      type: Date,
+      default: null,
+    },
+    otpVerifiedAt: {
+      type: Date,
+      default: null,
+    },
+    lastOtpPurpose: {
+      type: String,
+      enum: ["verify", "reset"],
+      default: undefined,
+    },
   },
   {
     timestamps: true,
   },
 );
+
+userSchema.index({ status: 1, createdAt: 1 });
 
 export const User = mongoose.model<IUser>("User", userSchema);

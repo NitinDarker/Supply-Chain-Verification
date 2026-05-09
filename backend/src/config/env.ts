@@ -15,7 +15,21 @@ export const env = {
     pass: process.env.SMTP_PASS || "",
   },
   otpExpirySeconds: parseInt(process.env.OTP_EXPIRY_SECONDS || "300", 10),
+  otpResendCooldownSeconds: parseInt(
+    process.env.OTP_RESEND_COOLDOWN_SECONDS || "60",
+    10,
+  ),
+  otpMaxVerifyAttempts: parseInt(process.env.OTP_MAX_VERIFY_ATTEMPTS || "5", 10),
   initialVelGrant: parseInt(process.env.INITIAL_VEL_GRANT || "100", 10),
+  unverifiedAccountTtlHours: parseInt(
+    process.env.UNVERIFIED_ACCOUNT_TTL_HOURS || "24",
+    10,
+  ),
+  unverifiedCleanupIntervalMinutes: parseInt(
+    process.env.UNVERIFIED_CLEANUP_INTERVAL_MINUTES || "30",
+    10,
+  ),
+  adminCreateKey: process.env.ADMIN_CREATE_KEY || "",
   walletEncryptionKey:
     process.env.WALLET_ENCRYPTION_KEY || "velen-dev-encryption-key-32ch",
 };

@@ -115,11 +115,7 @@ router.post(
       const validatorAddress = req.user!.walletAddress;
 
       const newBlock =
-        blockchainService.chain.minePendingTransactions(validatorAddress);
-
-      // Persist sealed block and clear pending from MongoDB
-      await blockchainService.persistBlock(newBlock);
-      await blockchainService.clearPendingTxs();
+        await blockchainService.minePendingTransactionsAtomic(validatorAddress);
 
       res.status(201).json({
         message: "Block mined successfully.",

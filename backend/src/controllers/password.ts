@@ -22,8 +22,38 @@ export async function forgotPassword(
 
     const user = await User.findOne({ email });
     if (user) {
-      const otp = await generateOTP(email, "reset");
-      await sendOTPEmail(email, otp, "reset");
+      const otpResult = await generateOTP(email, "reset");
+      if (!otpResult.ok) {
+        logger.info("[Reset OTP Cooldown]", {
+          email,
+          userId: String(user._id),
+          waitSeconds: otpResult.waitSeconds,
+        });
+        res.json({
+          message: "If the email is registered, a reset code has been sent.",
+        });
+        return;
+      }
+
+      await User.updateOne(
+        { _id: user._id },
+        {
+          $set: {
+            lastOtpSentAt: otpResult.sentAt,
+            otpExpiresAt: otpResult.expiresAt,
+            lastOtpPurpose: "reset",
+          },
+        },
+      );
+
+      logger.info("[Reset OTP Issued]", {
+        email,
+        userId: String(user._id),
+        sentAt: otpResult.sentAt.toISOString(),
+        expiresAt: otpResult.expiresAt.toISOString(),
+      });
+
+      await sendOTPEmail(email, otpResult.otp, "reset");
     }
 
     res.json({
@@ -52,6 +82,17 @@ export async function verifyResetOtp(
       res.status(400).json({ error: result.reason });
       return;
     }
+
+    await User.updateOne(
+      { email },
+      {
+        $set: {
+          otpVerifiedAt: new Date(),
+          otpExpiresAt: null,
+          lastOtpPurpose: "reset",
+        },
+      },
+    );
 
     const resetToken = uuidv4();
     await redis.setex(`reset-token:${email}`, 600, resetToken);
