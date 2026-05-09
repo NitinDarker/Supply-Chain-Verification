@@ -1,16 +1,21 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
 async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
+  const method = (options?.method || "GET").toUpperCase();
   const res = await fetch(`${API_URL}${endpoint}`, {
     credentials: "include",
     headers: { "Content-Type": "application/json" },
+    ...(method === "GET" ? { cache: "no-store" as RequestCache } : {}),
     ...options,
   });
-  const data = await res.json();
+
+  const raw = await res.text();
+  const data = raw ? JSON.parse(raw) : {};
+
   if (!res.ok) {
-    throw new Error(data.error || "Something went wrong");
+    throw new Error((data as { error?: string }).error || "Something went wrong");
   }
-  return data;
+  return data as T;
 }
 
 // ─── Interfaces ───────────────────────────────────────────────────────────────

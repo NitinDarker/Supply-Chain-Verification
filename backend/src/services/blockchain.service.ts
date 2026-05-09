@@ -34,6 +34,8 @@ class BlockchainService {
   public readonly chain: Blockchain;
   private blockModel?: BlockModel;
   private pendingModel?: PendingTxModel;
+  private lastSyncAt = 0;
+  private syncInFlight: Promise<void> | null = null;
 
   constructor() {
     this.chain = new Blockchain();
@@ -87,12 +89,14 @@ class BlockchainService {
     if (storedBlocks.length === 0) {
       // First run — persist the genesis block so DB and memory are in sync
       await BlockModel.create(this.chain.chain[0].toDTO());
+      this.lastSyncAt = Date.now();
       logger.info("[Blockchain] Fresh chain - genesis block persisted.");
       return;
     }
 
     // Rebuild chain from DB, skipping genesis (already in memory from constructor)
     this.chain.chain = storedBlocks.map((b) => Block.fromDTO(b as BlockDTO));
+    this.lastSyncAt = Date.now();
     logger.info("[Blockchain] Loaded blocks from MongoDB", {
       blockCount: this.chain.chain.length,
     });
@@ -106,6 +110,29 @@ class BlockchainService {
       logger.info("[Blockchain] Restored pending transactions", {
         pendingCount: pending.length,
       });
+    }
+  }
+
+  /**
+   * Refresh chain state from MongoDB only if stale.
+   * Reduces stale reads across multiple backend instances behind a load balancer.
+   */
+  public async syncFromDBIfStale(maxAgeMs = 1500): Promise<void> {
+    if (Date.now() - this.lastSyncAt < maxAgeMs) return;
+
+    if (this.syncInFlight) {
+      await this.syncInFlight;
+      return;
+    }
+
+    this.syncInFlight = (async () => {
+      await this.loadFromDB();
+    })();
+
+    try {
+      await this.syncInFlight;
+    } finally {
+      this.syncInFlight = null;
     }
   }
 

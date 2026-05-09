@@ -10,28 +10,45 @@ const router = Router();
  * Returns the authenticated user's wallet address, public key, and confirmed balance.
  * JWT payload has the address — no DB fetch needed here.
  */
-router.get("/me", authenticate, (req: Request, res: Response): void => {
-  const { walletAddress } = req.user!;
+router.get(
+  "/me",
+  authenticate,
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      await blockchainService.syncFromDBIfStale();
+      const { walletAddress } = req.user!;
 
-  const balance = blockchainService.chain.getBalanceOfAddress(walletAddress);
+      const balance = blockchainService.chain.getBalanceOfAddress(walletAddress);
 
-  res.json({
-    address: walletAddress,
-    balance,
-  });
-});
+      res.json({
+        address: walletAddress,
+        balance,
+      });
+    } catch (err) {
+      res.status(500).json({ error: "Failed to fetch wallet balance." });
+    }
+  },
+);
 
 /**
  * GET /api/wallet/balance/:address
  * Public — anyone can check any address's confirmed balance.
  */
-router.get("/balance/:address", (req: Request, res: Response): void => {
-  const { address } = req.params as { address: string };
+router.get(
+  "/balance/:address",
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      await blockchainService.syncFromDBIfStale();
+      const { address } = req.params as { address: string };
 
-  const balance = blockchainService.chain.getBalanceOfAddress(address);
+      const balance = blockchainService.chain.getBalanceOfAddress(address);
 
-  res.json({ address, balance });
-});
+      res.json({ address, balance });
+    } catch (err) {
+      res.status(500).json({ error: "Failed to fetch wallet balance." });
+    }
+  },
+);
 
 /**
  * GET /api/wallet/transactions
@@ -41,13 +58,18 @@ router.get("/balance/:address", (req: Request, res: Response): void => {
 router.get(
   "/transactions",
   authenticate,
-  (req: Request, res: Response): void => {
-    const { walletAddress } = req.user!;
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      await blockchainService.syncFromDBIfStale();
+      const { walletAddress } = req.user!;
 
-    const transactions =
-      blockchainService.chain.getTransactionsForAddress(walletAddress);
+      const transactions =
+        blockchainService.chain.getTransactionsForAddress(walletAddress);
 
-    res.json({ address: walletAddress, transactions });
+      res.json({ address: walletAddress, transactions });
+    } catch (err) {
+      res.status(500).json({ error: "Failed to fetch transactions." });
+    }
   },
 );
 

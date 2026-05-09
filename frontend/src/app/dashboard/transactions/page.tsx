@@ -33,12 +33,43 @@ export default function TransactionsPage() {
   const [error, setError]     = useState<string | null>(null);
   const [selected, setSelected] = useState<TransactionDTO | null>(null);
 
+  const loadTransactions = async () => {
+    if (!user) return;
+
+    try {
+      setError(null);
+      const d = await api.walletTransactions();
+      const sorted = [...d.transactions].sort((a, b) => b.timestamp - a.timestamp);
+      setTxs(sorted);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to load transactions.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    api.walletTransactions()
-      .then((d) => setTxs(d.transactions))
-      .catch((e) => setError(e.message))
-      .finally(() => setLoading(false));
-  }, []);
+    if (!user) return;
+    setLoading(true);
+    void loadTransactions();
+
+    const onFocus = () => {
+      void loadTransactions();
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") {
+        void loadTransactions();
+      }
+    };
+
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisibility);
+
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [user]);
 
   return (
     <div>
@@ -102,6 +133,17 @@ export default function TransactionsPage() {
               </button>
             );
           })}
+        </div>
+      )}
+
+      {!loading && (
+        <div className="mt-4 flex justify-end">
+          <button
+            onClick={() => void loadTransactions()}
+            className="text-sm text-primary hover:text-primary-hover transition-colors"
+          >
+            Refresh transactions
+          </button>
         </div>
       )}
 
