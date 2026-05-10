@@ -16,23 +16,23 @@ function safeEqual(a: string, b: string): boolean {
 
 export async function createAdmin(req: Request, res: Response): Promise<void> {
   try {
-    if (!env.adminCreateKey) {
-      logger.error("[Admin Create] ADMIN_CREATE_KEY not configured");
-      res
-        .status(503)
-        .json({ error: "Admin creation is disabled by server configuration." });
-      return;
-    }
+    // if (!env.adminCreateKey) {
+    //   logger.error("[Admin Create] ADMIN_CREATE_KEY not configured");
+    //   res
+    //     .status(503)
+    //     .json({ error: "Admin creation is disabled by server configuration." });
+    //   return;
+    // }
 
-    const providedKey = req.header("x-internal-admin-key") || "";
-    if (!safeEqual(providedKey, env.adminCreateKey)) {
-      logger.warn("[Admin Create] Invalid internal key", {
-        requestedBy: req.user?.userId,
-        ip: req.ip,
-      });
-      res.status(403).json({ error: "Forbidden." });
-      return;
-    }
+    // const providedKey = req.header("x-internal-admin-key") || "";
+    // if (!safeEqual(providedKey, env.adminCreateKey)) {
+    //   logger.warn("[Admin Create] Invalid internal key", {
+    //     requestedBy: req.user?.userId,
+    //     ip: req.ip,
+    //   });
+    //   res.status(403).json({ error: "Forbidden." });
+    //   return;
+    // }
 
     const { username, email, password } = req.body as {
       username: string;

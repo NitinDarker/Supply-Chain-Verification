@@ -298,12 +298,18 @@ export class Blockchain {
             currentHolder: null,
             totalMoves: 0,
             lastUpdated: null,
+            photoURL: null,
           });
         }
         const p = products.get(id)!;
         if (tx.type === TxType.PRODUCT_CREATE) {
           p.createdAt = tx.timestamp;
           p.currentHolder = tx.toAddress;
+          const photoURL =
+            typeof tx.metadata?.photoURL === "string"
+              ? tx.metadata.photoURL
+              : null;
+          if (photoURL) p.photoURL = photoURL;
         } else {
           p.currentHolder = tx.toAddress;
           p.totalMoves++;

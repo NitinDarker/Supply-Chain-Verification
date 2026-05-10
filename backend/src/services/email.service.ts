@@ -33,12 +33,10 @@ export async function sendOTPEmail(to: string, otp: string, purpose: "verify" | 
     </div>
   `;
 
-  // If SMTP not configured, just log to console
+  // Do not emit OTP/secrets into logs.
   if (!env.smtp.user || !env.smtp.pass) {
-    logger.warn("[Email] SMTP not configured; OTP emitted to logs", {
-      to,
+    logger.error("[Email] SMTP not configured; OTP email not sent", {
       purpose,
-      otp,
     });
     return;
   }
@@ -52,11 +50,10 @@ export async function sendOTPEmail(to: string, otp: string, purpose: "verify" | 
       html,
     });
   } catch (err) {
-    logger.warn("[Email] Failed to send email; OTP emitted to logs", {
+    logger.error("[Email] Failed to send email", {
       to,
       purpose,
       error: err instanceof Error ? err.message : err,
-      otp,
     });
   }
 }

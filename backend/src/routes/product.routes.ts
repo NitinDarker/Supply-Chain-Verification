@@ -13,6 +13,8 @@ import {
   registerProductSchema,
   moveProductSchema,
 } from "../validators/product.validator";
+import { productPhotoMiddleware } from "../middleware/upload.middleware";
+import { uploadProductPhoto } from "../services/cloudinary.service";
 
 const router = Router();
 
@@ -27,10 +29,36 @@ const router = Router();
 router.post(
   "/",
   authenticate,
-  validate(registerProductSchema),
+  productPhotoMiddleware,
   requireRole("manufacturer", "admin"),
   async (req: Request, res: Response): Promise<void> => {
-    const { productId, metadata = {} } = req.body;
+    const uploadReq = req as Request & { file?: Express.Multer.File };
+    let metadata: Record<string, unknown> = {};
+
+    if (typeof req.body.metadata === "string") {
+      try {
+        metadata = JSON.parse(req.body.metadata) as Record<string, unknown>;
+      } catch {
+        res.status(400).json({
+          error: "metadata must be valid JSON when sent as form-data.",
+        });
+        return;
+      }
+    } else if (req.body.metadata && typeof req.body.metadata === "object") {
+      metadata = req.body.metadata as Record<string, unknown>;
+    }
+
+    const parsed = registerProductSchema.safeParse({
+      productId: req.body.productId,
+      metadata,
+    });
+    if (!parsed.success) {
+      res.status(400).json({ error: "Invalid product data." });
+      return;
+    }
+
+    const { productId } = parsed.data;
+    metadata = parsed.data.metadata ?? {};
 
     if (!productId || typeof productId !== "string") {
       res.status(400).json({ error: "productId is required." });
@@ -47,6 +75,14 @@ router.post(
     }
 
     try {
+      if (uploadReq.file) {
+        const photoURL = await uploadProductPhoto(
+          uploadReq.file.buffer,
+          productId,
+        );
+        metadata.photoURL = photoURL;
+      }
+
       const user = await User.findById(req.user!.userId).lean();
       if (!user) {
         res.status(404).json({ error: "User not found." });
@@ -54,7 +90,6 @@ router.post(
       }
 
       const privateKey = decryptPrivateKey(user.encryptedPrivateKey);
-      logger.warn("[Product] Private key decrypted for signing");
       const wallet = new Wallet({ privateKey, publicKey: user.publicKey });
       const tx = wallet.createProduct(productId, {
         ...metadata,
@@ -64,6 +99,13 @@ router.post(
 
       const txId = blockchainService.chain.addProductTransaction(tx);
       await blockchainService.savePendingTx(tx);
+      logger.info("[Product] Register queued", {
+        productId,
+        txId,
+        userId: String(user._id),
+        role: user.role,
+        walletAddress: user.walletAddress,
+      });
 
       res.status(202).json({
         txId,
@@ -140,6 +182,14 @@ router.post(
 
       const txId = blockchainService.chain.addProductTransaction(tx);
       await blockchainService.savePendingTx(tx);
+      logger.info("[Product] Move queued", {
+        productId,
+        txId,
+        userId: String(user._id),
+        from: user.walletAddress,
+        to: toAddress,
+        role: user.role,
+      });
 
       res.status(202).json({
         txId,

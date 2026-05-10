@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { api, ProductSummary, ProductEvent } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 
@@ -121,6 +122,8 @@ export default function ProductsPage() {
   const [regName,    setRegName]    = useState("");
   const [regDesc,    setRegDesc]    = useState("");
   const [regLoc,     setRegLoc]     = useState("");
+  const [regPhoto,   setRegPhoto]   = useState<File | null>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
   const [regLoading, setRegLoading] = useState(false);
   const [regOk,      setRegOk]      = useState<string | null>(null);
   const [regErr,     setRegErr]     = useState<string | null>(null);
@@ -160,20 +163,53 @@ export default function ProductsPage() {
     e.preventDefault();
     setRegErr(null); setRegOk(null); setRegLoading(true);
     try {
-      const res = await api.registerProduct({ productId: regId, metadata: { name: regName, description: regDesc, location: regLoc } });
+      const res = await api.registerProduct({
+        productId: regId,
+        metadata: {
+          name: regName,
+          description: regDesc,
+          location: regLoc,
+        },
+        photo: regPhoto,
+      });
       setRegOk(res.txId);
-      setRegId(""); setRegName(""); setRegDesc(""); setRegLoc("");
+      setRegId(""); setRegName(""); setRegDesc(""); setRegLoc(""); setRegPhoto(null);
       loadProducts();
     } catch (err: unknown) {
       setRegErr(err instanceof Error ? err.message : "Registration failed.");
     } finally { setRegLoading(false); }
   };
 
+  const onProductPhotoSelected = (file: File | null) => {
+    if (!file) {
+      setRegPhoto(null);
+      return;
+    }
+    setRegErr(null);
+    const allowed = ["image/jpeg", "image/png", "image/webp"];
+    if (!allowed.includes(file.type)) {
+      setRegErr("Invalid image format. Use JPG, PNG, or WEBP.");
+      setRegPhoto(null);
+      return;
+    }
+    setRegPhoto(file);
+  };
+
   const handleMove = async (e: React.FormEvent) => {
     e.preventDefault();
     setMoveErr(null); setMoveOk(null); setMoveLoading(true);
     try {
-      const res = await api.moveProduct({ productId: moveId, toAddress: moveTo, metadata: { location: moveLoc, status: moveStatus } });
+      const metadata: Record<string, string> = {};
+      const trimmedLocation = moveLoc.trim();
+      const trimmedStatus = moveStatus.trim().toUpperCase();
+      if (trimmedLocation) metadata.location = trimmedLocation;
+      if (trimmedStatus) metadata.status = trimmedStatus;
+
+      const res = await api.moveProduct({
+        productId: moveId.trim(),
+        toAddress: moveTo.trim(),
+        ...(Object.keys(metadata).length > 0 ? { metadata } : {}),
+      });
       setMoveOk(res.txId);
       setMoveId(""); setMoveTo(""); setMoveLoc(""); setMoveStatus("");
       loadProducts();
@@ -491,6 +527,58 @@ export default function ProductsPage() {
           flex-wrap: wrap;
         }
 
+        .prod-upload-zone {
+          width: 100%;
+          min-height: 128px;
+          border: 1px dashed var(--card-border);
+          border-radius: 0.75rem;
+          background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+          padding: 0.9rem 1rem;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          text-align: center;
+          cursor: pointer;
+          transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+        }
+
+        .prod-upload-zone:hover {
+          border-color: rgba(99,102,241,0.45);
+          background: rgba(99,102,241,0.07);
+        }
+
+        .prod-upload-zone.drag-over {
+          border-color: var(--primary);
+          box-shadow: 0 0 0 3px rgba(99,102,241,0.16);
+          background: rgba(99,102,241,0.12);
+        }
+
+        .prod-upload-icon {
+          width: 28px;
+          height: 28px;
+          color: var(--primary);
+          margin: 0 auto 0.45rem;
+        }
+
+        .prod-upload-title {
+          font-size: 0.84rem;
+          color: var(--foreground);
+          font-weight: 600;
+        }
+
+        .prod-upload-sub {
+          margin-top: 0.15rem;
+          font-size: 0.73rem;
+          color: var(--muted);
+        }
+
+        .prod-upload-selected {
+          margin-top: 0.35rem;
+          font-size: 0.72rem;
+          color: #4ade80;
+          word-break: break-all;
+        }
+
         .prod-submit-btn {
           display: inline-flex;
           align-items: center;
@@ -594,11 +682,27 @@ export default function ProductsPage() {
                   {/* Row header — click to expand inline history */}
                   <div className="prod-row-main" onClick={() => toggleExpand(p.productId)}>
                     <div className="prod-row-left">
-                      <div className="prod-row-icon">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-                        </svg>
-                      </div>
+                      {p.photoURL ? (
+                        <Image
+                          src={p.photoURL}
+                          alt={p.productId}
+                          width={36}
+                          height={36}
+                          unoptimized
+                          style={{
+                            borderRadius: "0.5rem",
+                            objectFit: "cover",
+                            border: "1px solid var(--card-border)",
+                            flexShrink: 0,
+                          }}
+                        />
+                      ) : (
+                        <div className="prod-row-icon">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                          </svg>
+                        </div>
+                      )}
                       <div>
                         <div className="prod-row-id">{p.productId}</div>
                         <div className="prod-row-holder">
@@ -752,6 +856,55 @@ export default function ProductsPage() {
                 <Field label="Name"         value={regName} onChange={setRegName} placeholder="Product name"       required />
                 <Field label="Description"  value={regDesc} onChange={setRegDesc} placeholder="Optional description" />
                 <Field label="Origin / Location" value={regLoc}  onChange={setRegLoc}  placeholder="Factory A, Karachi" />
+                <div>
+                  <label style={{ display: "block", fontSize: "0.8rem", color: "var(--muted)", marginBottom: "0.4rem", fontWeight: 500 }}>
+                    Product Photo
+                  </label>
+                  <input
+                    id="product-photo-input"
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    style={{ display: "none" }}
+                    onChange={(e) => {
+                      onProductPhotoSelected(e.target.files?.[0] ?? null);
+                    }}
+                  />
+                  <div
+                    className={`prod-upload-zone ${isDragOver ? "drag-over" : ""}`}
+                    onClick={() => {
+                      const el = document.getElementById("product-photo-input") as HTMLInputElement | null;
+                      el?.click();
+                    }}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      setIsDragOver(true);
+                    }}
+                    onDragLeave={(e) => {
+                      e.preventDefault();
+                      setIsDragOver(false);
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      setIsDragOver(false);
+                      onProductPhotoSelected(e.dataTransfer.files?.[0] ?? null);
+                    }}
+                  >
+                    <div>
+                      <svg className="prod-upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="17 8 12 3 7 8" />
+                        <line x1="12" y1="3" x2="12" y2="15" />
+                      </svg>
+                      <div className="prod-upload-title">Drop image here or click to browse</div>
+                      <div className="prod-upload-sub">JPG, PNG, WEBP up to 5MB</div>
+                      {regPhoto && (
+                        <div className="prod-upload-selected">
+                          Selected: {regPhoto.name}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <div className="prod-form-footer">

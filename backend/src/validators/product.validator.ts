@@ -14,6 +14,7 @@ export const registerProductSchema = z.object({
       name: z.string().max(100).optional(),
       description: z.string().max(500).optional(),
       location: z.string().max(100).optional(),
+      photoURL: z.string().url().max(500).optional(),
     })
     .optional(),
 });

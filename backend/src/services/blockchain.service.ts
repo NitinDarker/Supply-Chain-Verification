@@ -97,9 +97,6 @@ class BlockchainService {
     // Rebuild chain from DB, skipping genesis (already in memory from constructor)
     this.chain.chain = storedBlocks.map((b) => Block.fromDTO(b as BlockDTO));
     this.lastSyncAt = Date.now();
-    logger.info("[Blockchain] Loaded blocks from MongoDB", {
-      blockCount: this.chain.chain.length,
-    });
 
     // Restore pending transactions if any survived a restart
     const pending = await PendingModel.find().lean();

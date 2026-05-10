@@ -71,6 +71,7 @@ export interface ProductSummary {
   currentHolder: string | null;
   totalMoves: number;
   lastUpdated: number | null;
+  photoURL: string | null;
 }
 
 export interface ProductHolder {

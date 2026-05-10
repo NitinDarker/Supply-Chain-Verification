@@ -24,11 +24,6 @@ export async function forgotPassword(
     if (user) {
       const otpResult = await generateOTP(email, "reset");
       if (!otpResult.ok) {
-        logger.info("[Reset OTP Cooldown]", {
-          email,
-          userId: String(user._id),
-          waitSeconds: otpResult.waitSeconds,
-        });
         res.json({
           message: "If the email is registered, a reset code has been sent.",
         });
@@ -45,13 +40,6 @@ export async function forgotPassword(
           },
         },
       );
-
-      logger.info("[Reset OTP Issued]", {
-        email,
-        userId: String(user._id),
-        sentAt: otpResult.sentAt.toISOString(),
-        expiresAt: otpResult.expiresAt.toISOString(),
-      });
 
       await sendOTPEmail(email, otpResult.otp, "reset");
     }

@@ -20,22 +20,37 @@ import { generalLimiter } from "./middleware/rateLimiter.middleware";
 import { sanitizeInput } from "./middleware/input.security";
 
 const app = express();
+const SLOW_REQUEST_MS = Number(process.env.SLOW_REQUEST_MS ?? 1000);
 
 app.use(express.json());
 app.use(cookieParser());
 
 app.use((req, res, next) => {
   const start = Date.now();
-  
+
   res.on("finish", () => {
-    logger.info("HTTP request completed", {
-      method: req.method,
-      url: req.originalUrl,
-      statusCode: res.statusCode,
-      durationMs: Date.now() - start,
-      ip: req.ip,
-      userAgent: req.get("user-agent"),
-    });
+    const durationMs = Date.now() - start;
+    const method = req.method.toUpperCase();
+
+    if (res.statusCode >= 500) {
+      logger.error("[HTTP] Server error response", {
+        method,
+        url: req.originalUrl,
+        statusCode: res.statusCode,
+        durationMs,
+        ip: req.ip,
+      });
+      return;
+    }
+
+    if (durationMs >= SLOW_REQUEST_MS && method !== "GET" && method !== "OPTIONS") {
+      logger.warn("[HTTP] Slow request", {
+        method,
+        url: req.originalUrl,
+        statusCode: res.statusCode,
+        durationMs,
+      });
+    }
   });
   next();
 });
@@ -81,7 +96,6 @@ app.get("/api/health", (req, res) => {
 
 // Error handling middleware
 app.use((_req, res) => {
-  logger.warn("Route not found");
   res.status(404).json({
     error: "Route not found.",
   });
@@ -102,6 +116,16 @@ async function start(): Promise<void> {
     });
   });
 }
+
+process.on("SIGINT", () => {
+  logger.info("[Velen] Shutdown requested", { signal: "SIGINT" });
+  process.exit(0);
+});
+
+process.on("SIGTERM", () => {
+  logger.info("[Velen] Shutdown requested", { signal: "SIGTERM" });
+  process.exit(0);
+});
 
 start().catch((err) => {
   logger.error("[Velen] Failed to start", { err });

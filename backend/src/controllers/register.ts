@@ -84,13 +84,11 @@ export async function register(req: Request, res: Response): Promise<void> {
       },
     );
 
-    logger.info("[Auth OTP Issued]", {
+    logger.info("[Auth] Register success: OTP issued", {
       email,
       userId: user._id,
-      purpose: "verify",
-      createdAt: user.createdAt.toISOString(),
-      sentAt: otpResult.sentAt.toISOString(),
-      expiresAt: otpResult.expiresAt.toISOString(),
+      role: user.role,
+      walletAddress: user.walletAddress,
     });
 
     await sendOTPEmail(email, otpResult.otp, "verify");

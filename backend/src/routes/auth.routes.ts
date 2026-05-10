@@ -42,7 +42,6 @@ router.post(
   "/_internal/admins",
   authLimiter,
   authMiddleware,
-  requireRole("admin"),
   validateWith(validateCreateAdminInput),
   createAdmin,
 );

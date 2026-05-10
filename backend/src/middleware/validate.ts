@@ -9,11 +9,7 @@ export const validate =
     } catch (err) {
       if (err instanceof ZodError) {
         return res.status(400).json({
-          error: "Invalid Credentials",
-          // details: err.errors.map((e) => ({
-          //   field: e.path.join("."),
-          //   message: e.message,
-          // })),
+          error: "Invalid request payload.",
         });
       }
       next(err);

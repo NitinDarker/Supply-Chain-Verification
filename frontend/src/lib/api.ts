@@ -2,9 +2,10 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
 async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
   const method = (options?.method || "GET").toUpperCase();
+  const isFormData = options?.body instanceof FormData;
   const res = await fetch(`${API_URL}${endpoint}`, {
     credentials: "include",
-    headers: { "Content-Type": "application/json" },
+    headers: isFormData ? undefined : { "Content-Type": "application/json" },
     ...(method === "GET" ? { cache: "no-store" as RequestCache } : {}),
     ...options,
   });
@@ -72,6 +73,7 @@ export interface ProductSummary {
   currentHolder: string | null;
   totalMoves: number;
   lastUpdated: number | null;
+  photoURL: string | null;
 }
 
 export interface ChainStats {
@@ -180,13 +182,24 @@ export const api = {
   registerProduct: (body: {
     productId: string;
     metadata?: Record<string, unknown>;
+    photo?: File | null;
   }) =>
-    request<{
-      txId: string;
-      status: string;
-      productId: string;
-      custodian: string;
-    }>("/products", { method: "POST", body: JSON.stringify(body) }),
+    (() => {
+      const form = new FormData();
+      form.append("productId", body.productId);
+      if (body.metadata) {
+        form.append("metadata", JSON.stringify(body.metadata));
+      }
+      if (body.photo) {
+        form.append("photo", body.photo);
+      }
+      return request<{
+        txId: string;
+        status: string;
+        productId: string;
+        custodian: string;
+      }>("/products", { method: "POST", body: form });
+    })(),
   moveProduct: (body: {
     productId: string;
     toAddress: string;

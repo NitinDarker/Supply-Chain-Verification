@@ -17,11 +17,17 @@ export async function login(req: Request, res: Response): Promise<void> {
     const user = await User.findOne({ email });
 
     if (!user) {
+      logger.warn("[Auth] Login failed: user not found", { email, ip: req.ip });
       res.status(401).json({ error: "Invalid email or password." });
       return;
     }
 
     if (user.status !== "verified") {
+      logger.warn("[Auth] Login blocked: unverified account", {
+        userId: String(user._id),
+        email: user.email,
+        ip: req.ip,
+      });
       res
         .status(403)
         .json({ error: "Email not verified. Please verify your email first." });
@@ -30,6 +36,11 @@ export async function login(req: Request, res: Response): Promise<void> {
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
+      logger.warn("[Auth] Login failed: invalid password", {
+        userId: String(user._id),
+        email: user.email,
+        ip: req.ip,
+      });
       res.status(401).json({ error: "Invalid email or password." });
       return;
     }
@@ -41,6 +52,13 @@ export async function login(req: Request, res: Response): Promise<void> {
     );
 
     res.cookie("token", token, COOKIE_OPTIONS);
+    logger.info("[Auth] Login success", {
+      userId: String(user._id),
+      email: user.email,
+      role: user.role,
+      walletAddress: user.walletAddress,
+      ip: req.ip,
+    });
 
     res.json({
       message: "Login successful.",

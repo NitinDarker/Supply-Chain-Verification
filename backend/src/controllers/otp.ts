@@ -51,10 +51,6 @@ export async function verifyOtp(req: Request, res: Response): Promise<void> {
         res.status(404).json({ error: "User not found." });
         return;
       }
-      logger.info("[Verify OTP Idempotent Success]", {
-        email,
-        userId: String(user._id),
-      });
     } else {
       const result = await verifyOTP(email, otp, "verify");
       if (!result.valid) {
@@ -116,11 +112,9 @@ export async function verifyOtp(req: Request, res: Response): Promise<void> {
           error: grantError,
         });
       }
-      logger.info("[Auth OTP Verified]", {
+      logger.info("[Auth] Email verification success", {
         email,
         userId: String(user._id),
-        verifiedAt: user.otpVerifiedAt?.toISOString(),
-        createdAt: user.createdAt.toISOString(),
       });
     }
 
@@ -184,10 +178,6 @@ export async function resendOtp(req: Request, res: Response): Promise<void> {
     }
 
     if (otpPurpose === "verify" && user.status === "verified") {
-      logger.info("[Resend OTP Ignored Already Verified]", {
-        email,
-        userId: String(user._id),
-      });
       res.json({ message: "If the email exists, a new OTP has been sent." });
       return;
     }
@@ -212,12 +202,10 @@ export async function resendOtp(req: Request, res: Response): Promise<void> {
       },
     );
 
-    logger.info("[Auth OTP Resent]", {
+    logger.info("[Auth] OTP resent", {
       email,
       userId: String(user._id),
       purpose: otpPurpose,
-      sentAt: otpResult.sentAt.toISOString(),
-      expiresAt: otpResult.expiresAt.toISOString(),
     });
 
     await sendOTPEmail(email, otpResult.otp, otpPurpose as "verify" | "reset");
